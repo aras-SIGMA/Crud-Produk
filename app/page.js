@@ -2,15 +2,34 @@
 
 import { useEffect, useState } from 'react';
 
-const emptyForm = { name: '', description: '', price: '' };
+const emptyForm = { name: '', description: '', price: '', id_categories: '' };
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedFilterCategory, setSelectedFilterCategory] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  // Inline category creation
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+
+  async function loadCategories() {
+    try {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      if (res.ok) {
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error('Gagal memuat kategori:', err);
+    }
+  }
 
   async function loadProducts() {
     setLoading(true);
@@ -28,6 +47,7 @@ export default function Home() {
   }
 
   useEffect(() => {
+    loadCategories();
     loadProducts();
   }, []);
 
@@ -36,12 +56,40 @@ export default function Home() {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
+  async function handleCreateCategory(e) {
+    e.preventDefault();
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) return;
+
+    setCreatingCategory(true);
+    setError('');
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name_categories: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menambah kategori');
+
+      await loadCategories();
+      setForm((prev) => ({ ...prev, id_categories: data.id_categories }));
+      setNewCategoryName('');
+      setShowNewCategoryInput(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreatingCategory(false);
+    }
+  }
+
   function startEdit(product) {
     setEditingId(product.id);
     setForm({
       name: product.name,
       description: product.description || '',
       price: product.price,
+      id_categories: product.id_categories ? String(product.id_categories) : '',
     });
   }
 
@@ -90,6 +138,10 @@ export default function Home() {
     }
   }
 
+  const displayedProducts = selectedFilterCategory
+    ? products.filter((p) => String(p.id_categories) === String(selectedFilterCategory))
+    : products;
+
   return (
     <main>
       <h1>CRUD Produk</h1>
@@ -110,6 +162,52 @@ export default function Home() {
               placeholder="Misal: Kopi Susu"
               required
             />
+          </div>
+
+          <div className="form-row">
+            <div className="label-row">
+              <label htmlFor="id_categories">Kategori</label>
+              <button
+                type="button"
+                className="btn-text-action"
+                onClick={() => setShowNewCategoryInput(!showNewCategoryInput)}
+              >
+                {showNewCategoryInput ? 'Batal Tambah Kategori' : '+ Tambah Kategori Baru'}
+              </button>
+            </div>
+
+            {showNewCategoryInput && (
+              <div className="inline-category-box">
+                <input
+                  type="text"
+                  placeholder="Nama kategori baru..."
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={creatingCategory || !newCategoryName.trim()}
+                  onClick={handleCreateCategory}
+                >
+                  {creatingCategory ? 'Menyimpan...' : 'Simpan Kategori'}
+                </button>
+              </div>
+            )}
+
+            <select
+              id="id_categories"
+              name="id_categories"
+              value={form.id_categories}
+              onChange={handleChange}
+            >
+              <option value="">-- Pilih Kategori --</option>
+              {categories.map((c) => (
+                <option key={c.id_categories} value={c.id_categories}>
+                  {c.name_categories}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="form-row">
@@ -152,23 +250,46 @@ export default function Home() {
         </form>
       </div>
 
-      <div className="status">
-        {loading ? 'Memuat data...' : `${products.length} produk ditemukan`}
+      <div className="table-controls">
+        <div className="status">
+          {loading ? 'Memuat data...' : `${displayedProducts.length} produk ditemukan`}
+        </div>
+        <div className="filter-group">
+          <label htmlFor="filter-cat">Filter Kategori:</label>
+          <select
+            id="filter-cat"
+            value={selectedFilterCategory}
+            onChange={(e) => setSelectedFilterCategory(e.target.value)}
+          >
+            <option value="">Semua Kategori</option>
+            {categories.map((c) => (
+              <option key={c.id_categories} value={c.id_categories}>
+                {c.name_categories}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <table>
         <thead>
           <tr>
             <th>Nama</th>
+            <th>Kategori</th>
             <th>Deskripsi</th>
             <th>Harga</th>
             <th>Aksi</th>
           </tr>
         </thead>
         <tbody>
-          {products.map((p) => (
+          {displayedProducts.map((p) => (
             <tr key={p.id}>
               <td>{p.name}</td>
+              <td>
+                <span className="badge-category">
+                  {p.name_categories || '-'}
+                </span>
+              </td>
               <td>{p.description}</td>
               <td>Rp {Number(p.price).toLocaleString('id-ID')}</td>
               <td>
@@ -184,8 +305,12 @@ export default function Home() {
         </tbody>
       </table>
 
-      {!loading && products.length === 0 && (
-        <div className="empty">Belum ada produk. Tambahkan produk pertama di atas.</div>
+      {!loading && displayedProducts.length === 0 && (
+        <div className="empty">
+          {selectedFilterCategory
+            ? 'Tidak ada produk dalam kategori ini.'
+            : 'Belum ada produk. Tambahkan produk pertama di atas.'}
+        </div>
       )}
     </main>
   );

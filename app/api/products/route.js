@@ -1,13 +1,35 @@
 import { NextResponse } from 'next/server';
 import { getPool } from '@/lib/db';
 
-// GET /api/products -> list all products
-export async function GET() {
+// GET /api/products -> list all products (dengan join category)
+export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const categoryId = searchParams.get('category_id');
+
     const pool = getPool();
-    const [rows] = await pool.query(
-      'SELECT id, name, description, price, created_at FROM products ORDER BY id DESC'
-    );
+    let query = `
+      SELECT 
+        p.id, 
+        p.name, 
+        p.description, 
+        p.price, 
+        p.id_categories, 
+        c.name_categories, 
+        p.created_at 
+      FROM products p
+      LEFT JOIN categories c ON p.id_categories = c.id_categories
+    `;
+    const params = [];
+
+    if (categoryId) {
+      query += ' WHERE p.id_categories = ?';
+      params.push(categoryId);
+    }
+
+    query += ' ORDER BY p.id DESC';
+
+    const [rows] = await pool.query(query, params);
     return NextResponse.json(rows);
   } catch (error) {
     console.error(error);
@@ -19,23 +41,31 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { name, description, price } = body;
+    const { name, description, price, id_categories } = body;
 
     if (!name || price === undefined || price === '') {
       return NextResponse.json(
-        { error: 'Field "name" and "price" wajib diisi' },
+        { error: 'Field "name" dan "price" wajib diisi' },
         { status: 400 }
       );
     }
 
     const pool = getPool();
+    const categoryVal = id_categories ? Number(id_categories) : null;
+
     const [result] = await pool.query(
-      'INSERT INTO products (name, description, price) VALUES (?, ?, ?)',
-      [name, description || null, price]
+      'INSERT INTO products (name, description, price, id_categories) VALUES (?, ?, ?, ?)',
+      [name, description || null, price, categoryVal]
     );
 
     return NextResponse.json(
-      { id: result.insertId, name, description, price },
+      {
+        id: result.insertId,
+        name,
+        description: description || null,
+        price,
+        id_categories: categoryVal,
+      },
       { status: 201 }
     );
   } catch (error) {

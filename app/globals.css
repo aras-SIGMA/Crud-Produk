@@ -10,7 +10,7 @@ body {
 }
 
 main {
-  max-width: 800px;
+  max-width: 850px;
   margin: 0 auto;
   padding: 32px 16px 64px;
 }
@@ -41,6 +41,14 @@ h1 {
   margin-bottom: 12px;
 }
 
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.label-row label,
 .form-row label {
   font-size: 13px;
   font-weight: 600;
@@ -48,12 +56,47 @@ h1 {
 }
 
 .form-row input,
-.form-row textarea {
+.form-row textarea,
+.form-row select {
   padding: 8px 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
+  background-color: #fff;
+}
+
+.inline-category-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  padding: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+}
+
+.inline-category-box input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.btn-text-action {
+  background: none;
+  border: none;
+  color: #2563eb;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.btn-text-action:hover {
+  color: #1d4ed8;
 }
 
 .form-actions {
@@ -114,10 +157,52 @@ button {
   background: #eff6ff;
 }
 
+.table-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.filter-group select {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  background-color: #fff;
+}
+
+.badge-category {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 th, td {
@@ -139,6 +224,9 @@ th {
   text-align: center;
   color: #888;
   font-size: 14px;
+  background: #fff;
+  border-radius: 8px;
+  margin-top: 12px;
 }
 
 .error-box {
@@ -153,5 +241,4 @@ th {
 .status {
   font-size: 13px;
   color: #666;
-  margin-bottom: 16px;
 }
